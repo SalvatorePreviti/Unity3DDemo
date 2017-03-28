@@ -5,7 +5,8 @@ using System.Linq;
 
 public class TapeChunk
 {
-	public bool isVisible;
+	internal float _visibilityUpdateTime;
+
 	public readonly TapeObject owner;
 	public readonly int chunkIndex;
 
@@ -13,25 +14,10 @@ public class TapeChunk
 
 	public Mesh mesh;
 
-	public readonly Bounds nonTransformedBounds;
-
-	public Bounds transformedBounds
-	{
-		get
-		{
-			var go = gameObject;
-			var transform = go != null ? go.transform : owner.transform;
-			return new Bounds (
-				transform.TransformPoint (nonTransformedBounds.center),
-				transform.TransformPoint (nonTransformedBounds.extents));
-		}
-	}
-
 	public TapeChunk (TapeObject owner, int chunkIndex)
 	{
 		this.owner = owner;
 		this.chunkIndex = chunkIndex;
-		this.nonTransformedBounds = owner.tapeBounds.GetChunkBounds(chunkIndex);
 	}
 
 	internal void OnInitialize ()
@@ -43,37 +29,51 @@ public class TapeChunk
 		Extrude (owner.tapeShape, owner.tapePath, chunkIndex * chunkLength, chunkLength + 1, mesh);
 		mesh.RecalculateBounds ();
 
-		isVisible = true;
-		if (Application.isPlaying) {
+		gameObject = new GameObject (typeof(TapeChunk).Name + " " + chunkIndex);
+		ObjectUtils.SetObjectAsDynamic (gameObject);
 
-			gameObject = new GameObject (typeof(TapeChunk).Name + " " + chunkIndex);
+		gameObject.transform.SetParent (this.owner.transform);
+		 
+		var originalRenderer = this.owner.GetComponent<MeshRenderer> ();
 
-			gameObject.transform.SetParent (this.owner.transform);
+		// Create the mesh renderer.
+		var renderer = gameObject.AddComponent<MeshRenderer> ();
+		ObjectUtils.SetObjectAsDynamic (renderer);
 
-			var renderer = gameObject.AddComponent<MeshRenderer> ();
-			renderer.material.color = (chunkIndex & 1) != 0 ? Color.red : Color.blue;
+		// Copy relevant properties.
 
-			var meshFilter = gameObject.AddComponent<MeshFilter> ();
+		renderer.additionalVertexStreams = originalRenderer.additionalVertexStreams;
+		renderer.sharedMaterial = originalRenderer.sharedMaterial;
+		renderer.sharedMaterials = originalRenderer.sharedMaterials;
+		renderer.sortingLayerID = originalRenderer.sortingLayerID;
+		renderer.sortingLayerName = originalRenderer.sortingLayerName;
+		renderer.sortingOrder = originalRenderer.sortingOrder;
+		renderer.reflectionProbeUsage = originalRenderer.reflectionProbeUsage;
+		renderer.receiveShadows = originalRenderer.receiveShadows;
+		renderer.probeAnchor = originalRenderer.probeAnchor;
+		renderer.motionVectorGenerationMode = originalRenderer.motionVectorGenerationMode;
+		renderer.shadowCastingMode = originalRenderer.shadowCastingMode;
 
-			meshFilter.sharedMesh = mesh;
-		}
+		var meshFilter = gameObject.AddComponent<MeshFilter> ();
+		ObjectUtils.SetObjectAsDynamic (meshFilter);
+
+		meshFilter.sharedMesh = mesh;
 	}
-
+	 
 	internal void OnDestroy ()
 	{
-		isVisible = false;
-
-		if (gameObject != null) {
-			MonoBehaviour.Destroy (gameObject);
-			gameObject = null;
-		}
-
 		if (mesh != null) {
 			if (Application.isPlaying)
 				MonoBehaviour.Destroy (mesh);
 			else
 				MonoBehaviour.DestroyImmediate (mesh);
 			mesh = null;
+		}
+
+		if (gameObject != null) {
+			ObjectUtils.DestroyDynamicChildrenRecursive (gameObject);
+			ObjectUtils.SafeDestroy (gameObject);
+			gameObject = null;
 		}
 	}
 

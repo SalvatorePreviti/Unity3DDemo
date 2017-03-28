@@ -6,7 +6,6 @@ public class TapeBounds
 {
 	public readonly int chunkLength;
 	public readonly int maxChunksToRender;
-	public readonly int minChunksToRender;
 
 	public readonly float minX;
 	public readonly float minY;
@@ -40,38 +39,16 @@ public class TapeBounds
 		tapeRay = new Ray (Vector3.zero, Vector3.forward);
 	}
 
-	public Bounds GetChunkBounds (int chunkIndex)
-	{
-		float dMultiplier = tapePathScale.z * chunkLength;
-		float d0 = chunkIndex * dMultiplier;
-		float d1 = (chunkIndex + 1) * dMultiplier;
-
-		Vector3 min = new Vector3 (float.MaxValue, float.MaxValue, float.MaxValue);
-		Vector3 max = new Vector3 (float.MinValue, float.MinValue, float.MinValue);
-
-		var boundingRays = this.boundingRays;
-		for (var i = 0; i < boundingRays.Length; ++i) {
-
-			var p1 = boundingRays [i].GetPoint (d0);
-			var p2 = boundingRays [i].GetPoint (d1);
-
-			min = Vector3.Min (min, Vector3.Min (p1, p2));
-			max = Vector3.Max (max, Vector3.Max (p1, p2));
-		}
-
-		return new Bounds ((max + min) / 2.0f, (max - min) * 2.0f);
-	}
-
-	public bool GetChunksRange (Transform transform, Vector3 cameraPosition, Plane[] frustum, out int i1, out int i2)
+	public bool GetChunksRange (Transform transform, Camera camera, out int i1, out int i2)
 	{
 		var isVisible = false;
 		float mind = float.MaxValue, maxd = float.MinValue;
+
+		var frustum = GeometryUtility.CalculateFrustumPlanes(camera);
+
 		foreach (var ray in boundingRays) {
-
-			var transformedRay = transform.TransformRay (ray);
-
 			float d1, d2;
-			if (MathUtils.GetFrustumLineIntersection (frustum, transformedRay, out d1, out d2)) {
+			if (MathUtils.GetFrustumLineIntersection (frustum, transform.TransformRay (ray), out d1, out d2)) {
 				isVisible = true;
 				mind = Mathf.Min (d1, mind);
 				maxd = Mathf.Max (d2, maxd);
@@ -88,13 +65,23 @@ public class TapeBounds
 		i1 = Mathf.FloorToInt (mind * d);
 		i2 = Mathf.CeilToInt (maxd * d);
 
-		if (i2 - i1 > maxChunksToRender) {
+		if (i2 < i1) {
+			var tmp = i2;
+			i2 = i1;
+			i1 = tmp;
+		}
 
-			var transformedTapeRay = transform.TransformRay (tapeRay);
-			var pd1 = Vector3.Distance (transformedTapeRay.GetPoint (mind), cameraPosition);
-			var pd2 = Vector3.Distance (transformedTapeRay.GetPoint (maxd), cameraPosition);
+		if (i2 == i1)
+			return true;
 
-			if (pd1 <= pd2) { // Camera is nearer to min
+		if (i2 - i1 > maxChunksToRender) // Too many chunks, trim down.
+		{
+			var tTapeRay = transform.TransformRay (this.tapeRay);
+			var cameraRay = camera.ViewportPointToRay (new Vector3 (0.5F, 0.5F, 0));
+
+			var tapeCameraDot = Vector3.Dot (cameraRay.direction, tTapeRay.direction);
+
+			if (tapeCameraDot > 0) { // Camera is nearer to min
 				i2 = i1 + maxChunksToRender;
 			} else { // Camerar is nearer to max
 				i1 = i2 - maxChunksToRender;

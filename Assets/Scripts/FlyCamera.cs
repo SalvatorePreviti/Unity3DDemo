@@ -69,5 +69,5 @@ public class FlyCamera : MonoBehaviour {
 		{
 			Screen.lockCursor = (Screen.lockCursor == false) ? true : false;
 		}
-	}
+	} 
 }
