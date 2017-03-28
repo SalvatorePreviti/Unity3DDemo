@@ -7,15 +7,13 @@ using System.Linq;
 [RequireComponent(typeof(MeshRenderer))]
 public class TapeObject : MonoBehaviour {
 
-	public Vector3 tapePathScale = new Vector3 (14, 14, 2);
+	public Vector3 tapePathScale = new Vector3 (40, 12, 4);
 
-	public float tapePathFrequency = 0.2f;
+	public float tapePathFrequency = 0.11f;
 
 	public int seed = 12345;
 
 	public int chunkLength = 100;
-
-	public int minChunksToRender = 4;
 
 	public int maxChunksToRender = 16;
 
@@ -25,9 +23,11 @@ public class TapeObject : MonoBehaviour {
 
 	private Dictionary<int, TapeChunk> _chunks;
 	private bool _needCleanup;
+	private int _updateCounter;
 
 	public TapeObject()
 	{
+		_updateCounter = 1;
 		_needCleanup = true;
 		_chunks = new Dictionary<int, TapeChunk> ();
 		tapeShape = TapeShape.CreateDefault ();
@@ -71,7 +71,7 @@ public class TapeObject : MonoBehaviour {
 	private void LoadProperties() {
 		DestroyAllChunks (true);
 		tapePath = new TapePath (tapePathScale, tapePathFrequency, seed);
-		tapeBounds = new TapeBounds (tapeShape, tapePath, chunkLength, minChunksToRender, maxChunksToRender);
+		tapeBounds = new TapeBounds (tapeShape, tapePath, chunkLength, maxChunksToRender);
 	}
 
 	private void UpdateChunks() {
@@ -80,11 +80,13 @@ public class TapeObject : MonoBehaviour {
 			DestroyAllChunks ();
 		}
 
+		var updateCounter = ++this._updateCounter;
+
 		var mainCamera = GetCamera();
 		if (mainCamera == null)
 			return; 
 
-		var time = Time.time;
+		var time = ObjectUtils.GetGlobalTime ();
 
 		int i1, i2;
 		if (tapeBounds.GetChunksRange (transform, mainCamera, out i1, out i2)) {
@@ -104,17 +106,26 @@ public class TapeObject : MonoBehaviour {
 					_chunks [i] = chunk;
 				}
 
-				chunk._visibilityUpdateTime = time;
+				chunk._visibilityUpdateCount = updateCounter;
+				chunk._visibilityLastTime = time;
 			}
 		}
 
 		List<TapeChunk> chunksToDestroy = null;
 		foreach (var chunk in _chunks.Values) {
-			if (chunk.gameObject == null || (chunk._visibilityUpdateTime != time && _chunks.Count > minChunksToRender)) {
-				if (chunksToDestroy == null)
-					chunksToDestroy = new List<TapeChunk> ();
-				chunksToDestroy.Add (chunk);
+
+			var shouldDestroy = false;
+
+			if (chunk.gameObject == null) {
+				shouldDestroy = true;
+			} else if (chunk._visibilityUpdateCount != updateCounter) { // invisible
+				var totalChunks = _chunks.Count - (chunksToDestroy != null ? chunksToDestroy.Count : 0);
+				if (totalChunks > maxChunksToRender + 2 || time - chunk._visibilityLastTime > 1)
+					shouldDestroy = true;
 			}
+
+			if (shouldDestroy)
+				(chunksToDestroy ?? (chunksToDestroy = new List<TapeChunk> ())).Add (chunk);
 		}
 
 		if (chunksToDestroy != null) {

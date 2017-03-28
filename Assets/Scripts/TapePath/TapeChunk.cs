@@ -5,7 +5,8 @@ using System.Linq;
 
 public class TapeChunk
 {
-	internal float _visibilityUpdateTime;
+	internal int _visibilityUpdateCount;
+	internal float _visibilityLastTime;
 
 	public readonly TapeObject owner;
 	public readonly int chunkIndex;
@@ -80,6 +81,7 @@ public class TapeChunk
 	public static void Extrude (TapeShape shape, TapePath path, int pathStart, int pathLength, Mesh mesh)
 	{
 		var lines = shape.lines;
+		var shapeNormals = shape.shapeNormals;
 		var shapeVertices = shape.shapeVertices; 
 		var shapeUCoords = shape.shapeUCoords;
 
@@ -101,7 +103,7 @@ public class TapeChunk
 
 				int id = offset + j;
 				vertices [id] = point.LocalToWorld (shapeVertices [j]);
-				normals [id] = point.LocalToWorldDirection (normals [j]);
+				normals [id] = point.LocalToWorldDirection (shapeNormals [j]);
 				uv [id] = new Vector2 (shapeUCoords [j], i / ((float)edgeLoops));
 			}
 		}

@@ -53,17 +53,23 @@ public class TapeShape {
 	public static TapeShape CreateDefault()
 	{
 		var vertices = new Vector3[] {
-			new Vector3(0, 0, 0),
-			new Vector3(4, 0, 0)
+			new Vector3(-4, 1, 0),
+			new Vector3(4, 1, 0),
+			new Vector3(4, -1, 0),
+			new Vector3(-4, -1, 0),
+			new Vector3(-4, 1, 0)
 		};
 
 		var normals = new Vector3[] {
 			new Vector3(0, 1, 0),
-			new Vector3(0, 1, 0)
+			new Vector3(0, 1, 0),
+			new Vector3(1, 0, 0),
+			new Vector3(1, 0, 0),
+			new Vector3(0, -1, 0)
 		};
 
 		var uCoords = new float[] {
-			0, 0
+			0.1f, 0.9f, 1f, 1f, 0.1f
 		};
 
 		return new TapeShape (vertices, normals, uCoords);

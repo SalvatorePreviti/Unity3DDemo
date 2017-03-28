@@ -17,7 +17,7 @@ public class TapeBounds
 	public readonly Ray[] boundingRays;
 	public readonly Ray tapeRay;
 
-	public TapeBounds (TapeShape tapeShape, TapePath tapePath, int chunkLength, int minChunksToRender, int maxChunksToRender)
+	public TapeBounds (TapeShape tapeShape, TapePath tapePath, int chunkLength, int maxChunksToRender)
 	{
 		this.chunkLength = chunkLength;
 		this.maxChunksToRender = maxChunksToRender;

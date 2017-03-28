@@ -1,9 +1,20 @@
 ﻿using System;
 using UnityEngine;
+using UnityEditor;
 using System.Collections.Generic;
 
 public static class ObjectUtils
 {
+	/// <summary>
+	/// Get the current time since application startup.
+	/// Valid also in Editor.
+	/// </summary>
+	public static float GetGlobalTime() {
+		if (Application.isPlaying)
+			return Time.realtimeSinceStartup;
+		return (float)EditorApplication.timeSinceStartup;
+	}
+	
 	public const HideFlags DynamicObjectHideFlags = HideFlags.DontSave | HideFlags.DontSaveInBuild | HideFlags.DontSaveInEditor | HideFlags.NotEditable;
 
 	public static bool IsDynamicObject (this UnityEngine.Object instance)
