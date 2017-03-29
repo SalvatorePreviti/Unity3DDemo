@@ -9,7 +9,7 @@ public class TapeObject : MonoBehaviour {
 
 	public Vector3 tapePathScale = new Vector3 (40, 12, 4);
 
-	public float tapePathFrequency = 0.11f;
+	public float tapePathFrequency = 0.13f;
 
 	public int seed = 12345;
 
@@ -33,19 +33,10 @@ public class TapeObject : MonoBehaviour {
 		tapeShape = TapeShape.CreateDefault ();
 	}
 
-	void OnEnable() {
-		DestroyAllChunks ();
-	}
-
-	void OnDisable() {
-		DestroyAllChunks ();
-	}
-
 	void Awake() {
 		LoadProperties ();
 	}
 
-	/// <summary>Called by editor when some property changes or code is recompiled.</summary>
 	void OnValidate() {
 		LoadProperties ();
 	}
@@ -53,7 +44,19 @@ public class TapeObject : MonoBehaviour {
 	void OnDrawGizmos() {
 		UpdateChunks ();
 	}
-	 
+
+	void Start() {
+		this.enabled = true;
+	}
+
+	void OnEnable() {
+		DestroyAllChunks ();
+	}
+
+	void OnDisable() {
+		DestroyAllChunks ();
+	}
+ 
 	public Camera GetCamera() {
 		if (Application.isPlaying)
 			return Camera.main;

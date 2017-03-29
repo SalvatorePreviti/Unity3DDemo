@@ -44,11 +44,24 @@ public class TapeBounds
 		var isVisible = false;
 		float mind = float.MaxValue, maxd = float.MinValue;
 
-		var frustum = GeometryUtility.CalculateFrustumPlanes(camera);
+		var cameraRay = camera.ViewportPointToRay (new Vector3 (0.5F, 0.5F, camera.nearClipPlane));
+		var frustum = GeometryUtility.CalculateFrustumPlanes (camera);
 
 		foreach (var ray in boundingRays) {
+			var tRay = transform.TransformRay (ray);
+
+			// Find the intersection points between frustum and ray
 			float d1, d2;
-			if (MathUtils.GetFrustumLineIntersection (frustum, transform.TransformRay (ray), out d1, out d2)) {
+			if (MathUtils.GetFrustumLineIntersection (frustum, tRay, out d1, out d2)) {
+
+				var w1 = camera.WorldToViewportPoint (tRay.GetPoint (d1));
+				if (Mathf.Abs (w1.x) > 1f || Mathf.Abs (w1.y) > 1f || w1.z < 0)
+					continue; // Point not visible, skip this ray
+
+				var w2 = camera.WorldToViewportPoint (tRay.GetPoint (d2));
+				if (Mathf.Abs (w2.x) > 1f || Mathf.Abs (w2.y) > 1f || w2.z < 0)
+					continue; // Point not visible, skip this ray
+
 				isVisible = true;
 				mind = Mathf.Min (d1, mind);
 				maxd = Mathf.Max (d2, maxd);
@@ -62,8 +75,8 @@ public class TapeBounds
 		}
 
 		float d = 1.0f / (tapePathScale.z * chunkLength);
-		i1 = Mathf.FloorToInt (mind * d);
-		i2 = Mathf.CeilToInt (maxd * d);
+		i1 = Mathf.FloorToInt (mind * d - 0.1f);
+		i2 = Mathf.CeilToInt (maxd * d + 0.1f);
 
 		if (i2 < i1) {
 			var tmp = i2;
@@ -74,10 +87,8 @@ public class TapeBounds
 		if (i2 == i1)
 			return true;
 
-		if (i2 - i1 > maxChunksToRender) // Too many chunks, trim down.
-		{
+		if (i2 - i1 > maxChunksToRender) { // Too many chunks, trim down.
 			var tTapeRay = transform.TransformRay (this.tapeRay);
-			var cameraRay = camera.ViewportPointToRay (new Vector3 (0.5F, 0.5F, 0));
 
 			var tapeCameraDot = Vector3.Dot (cameraRay.direction, tTapeRay.direction);
 

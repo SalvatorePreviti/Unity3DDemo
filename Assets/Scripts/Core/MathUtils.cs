@@ -77,13 +77,34 @@ public static class MathUtils
 			d1 = b;
 			d2 = a;
 		}
+		 
+		return true;
+	}
 
-		// Final step, build a bounding box and see if the computed points in the ray are valid
+	/// <summary>
+	/// wo non-parallel lines which may or may not touch each other have a point on each line which are closest
+	/// to each other. This function finds those two points. If the lines are not parallel, the function returns true, otherwise false.
+	/// </summary>
+	public static bool ClosestPointsOnTwoRays(Ray r1, Ray r2, out float pointOnR1)
+	{
+		var a = Vector3.Dot (r1.direction, r1.direction);
+		var b = Vector3.Dot (r1.direction, r2.direction);
+		var e = Vector3.Dot (r2.direction, r2.direction);
 
-		var p1 = ray.GetPoint (d1);
-		var p2 = ray.GetPoint (d2);
+		float d = a * e - b * b;
 
-		return GeometryUtility.TestPlanesAABB (frustum, new Bounds ((p1 + p2) / 2, (p2 - p1) / 2));
+		if (d == 0.0f) {
+			pointOnR1 = 0.0f;
+			return false;
+		}
+
+		var r = r1.origin - r2.origin;
+		var c = Vector3.Dot (r1.direction, r);
+		var f = Vector3.Dot (r2.direction, r);
+
+		pointOnR1 = (b * f - c * e) / d;
+
+		return true;
 	}
 
 	/// <summary>
