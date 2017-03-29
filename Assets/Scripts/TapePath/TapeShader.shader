@@ -17,6 +17,7 @@
 		sampler2D _MainTex;
 
 		struct Input {
+			float4 screenPos;
 			float2 uv_MainTex;
 		};
 
@@ -25,13 +26,25 @@
 		fixed4 _Color;
 
 		void surf (Input IN, inout SurfaceOutputStandard o) {
-
+		 
 			// Albedo comes from a texture tinted by color
 			fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * _Color;
 
-			fixed cellPos = fmod(IN.uv_MainTex.y * 40, 1);
+			//fixed cellPos = fmod(IN.screenPos.z, 1);
 
-			c *= cellPos * 40;
+			//c.r = 0;
+
+			float p = abs(fmod(IN.uv_MainTex.y, 1.0));
+
+			float sep = p - 0.2 > 0 ? p + frac(IN.screenPos.z) : 0;
+			if (sep > 1)
+				sep = 1;
+
+
+
+
+			//c.r = frac(IN.screenPos.y);
+			c.rgb *= sep;
 
 			o.Albedo = c.rgb;
 

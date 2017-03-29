@@ -5,7 +5,8 @@ using UnityEngine;
 public static class MathUtils
 {
 	/// <summary>Removes an entry from a dictionary checking by key and value.</summary>
-	public static bool Remove<K, V>(this Dictionary<K, V> dictionary, K key, V value) {
+	public static bool Remove<K, V> (this Dictionary<K, V> dictionary, K key, V value)
+	{
 		return (dictionary as ICollection<KeyValuePair<K, V>>).Remove (new KeyValuePair<K,V> (key, value));
 	}
 
@@ -14,124 +15,63 @@ public static class MathUtils
 		return new Ray (transform.TransformPoint (ray.origin), transform.TransformDirection (ray.direction));
 	}
 
-	/// <summary>
-	/// Computes the intersection points between a frustum and an infinite line.
-	/// Finds the visible part of a segment in respect of a camera frustum.
-	/// Returns false if the line is not visible at all.
-	/// </summary>
-	/// <example>
-	/// var planes = GeometryUtility.CalculateFrustumPlanes(camera);
-	/// if (GetFrustumLineIntersection(planes, ray, out d1, out d2)) {
-	/// 	Gizmos.DrawLine(ray.GetPoint(d1), ray.GetPoint(d2));
-	/// }
-	/// </example>
-	/// <param name="planes">Frustum planes array</param>
-	/// <param name="ray">The ray to intersect</param>
-	/// <param name="d1">Output, minimum distance from the ray origin</param>
-	/// <param name="d1">Output, maximum distance the ray origin</param>
-	/// <returns>True if the segment is visible, false if not.</returns>
-	public static bool GetFrustumLineIntersection (Plane[] frustum, Ray ray, out float d1, out float d2)
+	public static bool GetFrustumLineIntersection (Plane[] frustum, Ray ray, Vector3 tolerance, out float d1, out float d2)
 	{
-		var a = 0.0f;
-		var aValid = false;
+		d1 = 0f;
+		d2 = 0f;
 
-		var b = 0.0f;
-		var bValid = false;
-
+		float d1Angle = 0f, d2Angle = 0f;
+		bool d1Valid = false, d2Valid = false;
 		for (int i = 0; i < frustum.Length; ++i) {
 
+			// Find the angle between a frustum plane and the ray.
+			var angle = Mathf.Abs (Vector3.Angle (frustum [i].normal, ray.direction) - 90f);
+			if (angle < 2f)
+				continue; // Ray almost parallel to the plane, skip the plane.
+
+			if (angle < d1Angle && angle < d2Angle)
+				continue; // The angle is smaller than a previous angle that was better, skip the plane.
+
+			// Cast a ray onto the plane to find the distance from ray origin where it happens.
+			// Compute also the direction the ray hits the plane, backward or forward (dir) ignoring the ray direction.
 			float d;
-			var direction = frustum [i].Raycast (ray, out d);
+			var dir = frustum [i].Raycast (ray, out d) ^ (frustum [i].GetDistanceToPoint (ray.origin) >= 0);
 
-			if ((!direction && d == 0.0f))
-				continue; // No intersection, ray is parallel to the plane
-
-			if (frustum [i].GetDistanceToPoint (ray.origin) < 0)
-				direction = !direction; // Invert sign to ignore ray orientation
-
-			// Choose where this point belong (a or b) depending on the direction.
-			if (!direction) {
-				if (!aValid || d > a) {
-					a = d;
-					aValid = true;
+			// Update d1 or d2, depending on the direction.
+			if (dir) {
+				d1Angle = angle;
+				if (!d1Valid || d > d1) { // Choose the maximum value
+					d1 = d;
+					d1Valid = true;
 				}
-			} else if (!bValid || d < b) {
-				b = d;
-				bValid = true;
+			} else {
+				d2Angle = angle;
+				if (!d2Valid || d < d2) { // Choose the minimum value
+					d2 = d;
+					d2Valid = true;
+				}
 			}
 		}
 
-		if (!aValid || !bValid) {
-			// No intersection found.
-			d1 = 0.0f;
-			d2 = 0.0f;
-			return false;
+		if (!d1Valid || !d2Valid)
+			return false; // Points are not valid.
+
+		// Sort points
+
+		if (d1 > d2) {
+			var t = d1;
+			d1 = d2;
+			d2 = t;
 		}
 
-		// Sort distances
+		// Check whether points are visible in the frustum.
 
-		if (a <= b) {
-			d1 = a;
-			d2 = b;
-		} else {
-			d1 = b;
-			d2 = a;
-		}
-		 
-		return true;
-	}
+		var p1 = ray.GetPoint (d1);
+		var p2 = ray.GetPoint (d2);
 
-	/// <summary>
-	/// wo non-parallel lines which may or may not touch each other have a point on each line which are closest
-	/// to each other. This function finds those two points. If the lines are not parallel, the function returns true, otherwise false.
-	/// </summary>
-	public static bool ClosestPointsOnTwoRays(Ray r1, Ray r2, out float pointOnR1)
-	{
-		var a = Vector3.Dot (r1.direction, r1.direction);
-		var b = Vector3.Dot (r1.direction, r2.direction);
-		var e = Vector3.Dot (r2.direction, r2.direction);
+		var bb = new Bounds ();
+		bb.SetMinMax (Vector3.Min (p1, p2) - tolerance, Vector3.Max (p1, p2) + tolerance);
 
-		float d = a * e - b * b;
-
-		if (d == 0.0f) {
-			pointOnR1 = 0.0f;
-			return false;
-		}
-
-		var r = r1.origin - r2.origin;
-		var c = Vector3.Dot (r1.direction, r);
-		var f = Vector3.Dot (r2.direction, r);
-
-		pointOnR1 = (b * f - c * e) / d;
-
-		return true;
-	}
-
-	/// <summary>
-	/// wo non-parallel lines which may or may not touch each other have a point on each line which are closest
-	/// to each other. This function finds those two points. If the lines are not parallel, the function returns true, otherwise false.
-	/// </summary>
-	public static bool ClosestPointsOnTwoRays(Ray r1, Ray r2, out float pointOnR1, out float pointOnR2)
-	{
-		var a = Vector3.Dot (r1.direction, r1.direction);
-		var b = Vector3.Dot (r1.direction, r2.direction);
-		var e = Vector3.Dot (r2.direction, r2.direction);
-
-		float d = a * e - b * b;
-
-		if (d == 0.0f) {
-			pointOnR1 = 0.0f;
-			pointOnR2 = 0.0f;
-			return false;
-		}
-
-		var r = r1.origin - r2.origin;
-		var c = Vector3.Dot (r1.direction, r);
-		var f = Vector3.Dot (r2.direction, r);
-
-		pointOnR1 = (b * f - c * e) / d;
-		pointOnR2 = (a * f - c * b) / d;
-
-		return true;
+		return GeometryUtility.TestPlanesAABB (frustum, bb);
 	}
 }

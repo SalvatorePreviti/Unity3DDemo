@@ -54,14 +54,14 @@ public class TapeShape {
 	{
 		var vertices = new Vector3[] {
 
-			new Vector3(-4, 1, 0),
-			new Vector3(4, 1, 0),
+			new Vector3(-5, 1, 0),
+			new Vector3(5, 1, 0),
 
-			new Vector3(4, 1, 0),
+			new Vector3(5, 1, 0),
 
-			new Vector3(4, -1, 0),
-			new Vector3(-4, -1, 0),
-			new Vector3(-4, 1, 0)
+			new Vector3(5, -1, 0),
+			new Vector3(-5, -1, 0),
+			new Vector3(-5, 1, 0)
 		};
 
 		var normals = new Vector3[] {

@@ -27,7 +27,7 @@ public class TapeChunk
 
 		var chunkLength = owner.tapeBounds.chunkLength;
 
-		Extrude (owner.tapeShape, owner.tapePath, chunkIndex * chunkLength, chunkLength + 1, mesh);
+		Extrude (owner.tapeShape, owner.tapePath, chunkIndex * chunkLength, chunkLength + 1, owner.tapeBounds.cellSize, mesh);
 		mesh.RecalculateBounds ();
 
 		gameObject = new GameObject (typeof(TapeChunk).Name + " " + chunkIndex);
@@ -43,7 +43,6 @@ public class TapeChunk
 
 		// Copy relevant properties.
 
-		renderer.additionalVertexStreams = originalRenderer.additionalVertexStreams;
 		renderer.sharedMaterial = originalRenderer.sharedMaterial;
 		renderer.sharedMaterials = originalRenderer.sharedMaterials;
 		renderer.sortingLayerID = originalRenderer.sortingLayerID;
@@ -78,7 +77,7 @@ public class TapeChunk
 		}
 	}
 
-	public static void Extrude (TapeShape shape, TapePath path, int pathStart, int pathLength, Mesh mesh)
+	public static void Extrude (TapeShape shape, TapePath path, int pathStart, int pathLength, float cellSize, Mesh mesh)
 	{
 		var lines = shape.lines;
 		var shapeNormals = shape.shapeNormals;
@@ -104,7 +103,7 @@ public class TapeChunk
 				int id = offset + j;
 				vertices [id] = point.LocalToWorld (shapeVertices [j]);
 				normals [id] = point.LocalToWorldDirection (shapeNormals [j]);
-				uv [id] = new Vector2 (shapeUCoords [j], i / ((float)edgeLoops));
+				uv [id] = new Vector2 (shapeUCoords [j], i / cellSize);
 			}
 		}
 

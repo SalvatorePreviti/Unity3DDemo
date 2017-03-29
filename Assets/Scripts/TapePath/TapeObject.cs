@@ -17,6 +17,8 @@ public class TapeObject : MonoBehaviour {
 
 	public int maxChunksToRender = 16;
 
+	public float cellSize = 10f;
+
 	public TapePath tapePath;
 	public TapeShape tapeShape;
 	public TapeBounds tapeBounds;
@@ -73,8 +75,9 @@ public class TapeObject : MonoBehaviour {
 
 	private void LoadProperties() {
 		DestroyAllChunks (true);
+		_needCleanup = true;
 		tapePath = new TapePath (tapePathScale, tapePathFrequency, seed);
-		tapeBounds = new TapeBounds (tapeShape, tapePath, chunkLength, maxChunksToRender);
+		tapeBounds = new TapeBounds (tapeShape, tapePath, chunkLength, maxChunksToRender, cellSize);
 	}
 
 	private void UpdateChunks() {
