@@ -4,6 +4,41 @@ using UnityEngine;
 
 public static class MathUtils
 {
+	public static bool GetMinMax (this Vector3[] vertices, out Vector3 min, out Vector3 max)
+	{
+		if (vertices == null || vertices.Length == 0) {
+			min = Vector3.zero;
+			max = Vector3.zero;
+			return false;
+		}
+
+		float minX, minY, minZ;
+		var maxX = minX = vertices [0].x;
+		var maxY = minY = vertices [0].y;
+		var maxZ = minZ = vertices [0].z;
+		for (int i = 1; i < vertices.Length; ++i) {
+			if (minX < vertices [i].x)
+				minX = vertices [i].x;
+			if (maxX > vertices [i].x)
+				maxX = vertices [i].x;
+			if (minY < vertices [i].y)
+				minY = vertices [i].y;
+			if (maxY > vertices [i].y)
+				maxY = vertices [i].y;
+			if (minZ < vertices [i].z)
+				minZ = vertices [i].z;
+			if (maxZ > vertices [i].z)
+				maxZ = vertices [i].z;
+		}
+		min.x = minX;
+		min.y = minY;
+		min.z = minZ;
+		max.x = maxX;
+		max.y = maxY;
+		max.z = maxZ;
+		return true;
+	}
+
 	/// <summary>Removes an entry from a dictionary checking by key and value.</summary>
 	public static bool Remove<K, V> (this Dictionary<K, V> dictionary, K key, V value)
 	{

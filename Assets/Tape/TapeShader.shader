@@ -1,5 +1,6 @@
 ﻿Shader "Custom/TapeShader" {
 	Properties {
+		_charactersInTexture("Characters in texture", int) = 7
 		_Color ("Color", Color) = (1,0,1,1)
 		_MainTex ("Albedo (RGB)", 2D) = "white" {}
 		_Glossiness ("Smoothness", Range(0,1)) = 0.5
@@ -17,34 +18,29 @@
 		sampler2D _MainTex;
 
 		struct Input {
-			float4 screenPos;
 			float2 uv_MainTex;
+			float4 screenPos;
 		};
+
+		static const int CellsPerChunk = 32;
+		static const int CharactersInTexture = 7;
 
 		half _Glossiness;
 		half _Metallic;
 		fixed4 _Color;
+		float _TapeMemory[CellsPerChunk];
 
 		void surf (Input IN, inout SurfaceOutputStandard o) {
-		 
-			// Albedo comes from a texture tinted by color
-			fixed4 c = tex2D (_MainTex, IN.uv_MainTex) * _Color;
+			int cellIndex = IN.uv_MainTex.y * CellsPerChunk;
 
-			//fixed cellPos = fmod(IN.screenPos.z, 1);
+			int xchar = _TapeMemory[cellIndex];
 
-			//c.r = 0;
+			float2 uv = float2(
+				(IN.uv_MainTex.x + xchar % CharactersInTexture) / CharactersInTexture,
+				1 - ((1 - (IN.uv_MainTex.y * CellsPerChunk - cellIndex)) + xchar / CharactersInTexture) / CharactersInTexture
+			);
 
-			float p = abs(fmod(IN.uv_MainTex.y, 1.0));
-
-			float sep = p - 0.2 > 0 ? p + frac(IN.screenPos.z) : 0;
-			if (sep > 1)
-				sep = 1;
-
-
-
-
-			//c.r = frac(IN.screenPos.y);
-			c.rgb *= sep;
+			fixed4 c = tex2D (_MainTex, uv) * _Color;
 
 			o.Albedo = c.rgb;
 

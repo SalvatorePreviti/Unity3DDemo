@@ -5,6 +5,15 @@ using System.Collections.Generic;
 
 public static class ObjectUtils
 {
+	public static T GetComponent<T>(this UnityEngine.GameObject owner, ref T field) 
+		where T : Component
+	{
+		if (field != null)
+			return field;
+		field = owner.GetComponent<T> ();
+		return field;
+	}
+
 	/// <summary>
 	/// Get the current time since application startup.
 	/// Valid also in Editor.
